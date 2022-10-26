@@ -56,19 +56,64 @@ void clearScreen(WINDOW *window, int fromX, int toX, int fromY, int toY) {
     }
 }
 
+void toolTipMessage(string message, string message1) {
+    move(14, 12);
+    printw("                                                             ");
+    move(14, 12);
+    printw(message.c_str());
+    move(14 + 1, 12);
+    printw("                                                             ");
+    move(14 + 1, 12);
+    printw(message1.c_str());
+
+    refresh();
+}
+
 /**
  * --------------------------- WINDOWS HELPER FUNCTIONS ---------------------------
 */
 void gameMenuWindow(WINDOW* window, int highlighted);   // WINDOW_CODE: 0
 void gameModeWindow(WINDOW* window);    // WINDOW_CODE: 1
 
+void printGameMode() {
+    move(2, 1);
+    printw("Gamemode: ");
+    if(gameMode == 0) {
+        attron(COLOR_PAIR(1));
+        printw("Easy        ");
+        attroff(COLOR_PAIR(1));
+    }
+    if(gameMode == 1) {
+        attron(COLOR_PAIR(2));
+        printw("Medium        ");
+        attroff(COLOR_PAIR(2));
+    }
+    if(gameMode == 2) {
+        attron(COLOR_PAIR(3));
+        printw("Hard        ");
+        attroff(COLOR_PAIR(3));
+    }
+    refresh();
+}
+
 void statsWindow(WINDOW* window) {
+    mvwprintw(window, 0, 2, " Statistics ");
     
+    if(gameMode == 0) {
+        mvwprintw(window, 2, 5, "Games started: ");
+        mvwprintw(window, 2, 42, "18");
+        mvwprintw(window, 3, 4, "-----------------------------------------");
+        mvwprintw(window, 4, 5, "Games won: ");
+        mvwprintw(window, 4, 42, "09");
+        mvwprintw(window, 5, 4, "-----------------------------------------");
+        mvwprintw(window, 6, 5, "Win rate:");
+        mvwprintw(window, 6, 40, "50 %%");
+    }
+
+    wrefresh(window);
 }
 
-void startGame(WINDOW* window) {
-
-}
+void startGame(WINDOW* window) {}
 
 void exitPrompt(WINDOW* window, int highlighted, int returnWindow) {
     keypad(stdscr, true);
@@ -101,15 +146,19 @@ void exitPrompt(WINDOW* window, int highlighted, int returnWindow) {
 }
 
 void gameModeWindow(WINDOW* window) {
-    string modes[3] = {"Easy", "Hard", "Impossible"};
+    string modes[3] = {"Easy", "Medium", "Hard"};
+    
     int choice;
     int highlighted = gameMode;
+
     keypad(window, true);
     wattron(window, A_BOLD);
     wattron(window, A_UNDERLINE);
-    mvwprintw(window, 6, 5, "Game mode");
+    mvwprintw(window, 5, 5, "Game mode");
     wattroff(window, A_BOLD);
     wattroff(window, A_UNDERLINE);
+
+    toolTipMessage("Select an option with ENTER", "Press LEFT_ARROW to close the submenu");
 
     wrefresh(window);
     while(1) {
@@ -125,8 +174,8 @@ void gameModeWindow(WINDOW* window) {
 
         switch (choice) {
             case KEY_LEFT:
-                // Exit submenu on click left
-                choice = 10;
+                // Exit submenu on click left but do not select the game mode
+                choice = -10;
                 break;
 
             case KEY_UP:
@@ -148,6 +197,11 @@ void gameModeWindow(WINDOW* window) {
             break;
         }
 
+        if(choice == -10) {
+            clearScreen(window, 28, 38, 2, 7);
+            break;
+        }
+
         if(choice == 101 || choice == 69) {
             // User pressed 'E' or 'e' key
             break;
@@ -157,7 +211,7 @@ void gameModeWindow(WINDOW* window) {
     if(choice == 101 || choice == 69) {
         exitPrompt(window, highlighted, 1);
     } else {
-        gameMenuWindow(window, 2);
+        gameMenuWindow(window, 1);
     }
 
 }
@@ -165,20 +219,29 @@ void gameModeWindow(WINDOW* window) {
 void gameMenuWindow(WINDOW* window, int highlighted) {
     int choice = 0;
 
-    string choices[3] = {"New game", "Statistics", "Game mode"};
+    printGameMode();
+
+    string choices[3] = {"New game", "Game mode"};
 
     keypad(window, true);   // So we can use arrow keys
 
     while(1) {
         mvwprintw(window, 0, 2, " Sudoku puzzle main menu ");
 
-        for(int i = 0; i < 3; i++) {
+        for(int i = 0; i < 2; i++) {
             if(i == highlighted) {
                 wattron(window, A_REVERSE);
-                mvwprintw(window, 2 * (i + 1), 5, choices[i].c_str());
+                mvwprintw(window, 2 * (i + 1) + 1, 5, choices[i].c_str());
                 wattroff(window, A_REVERSE);
+
+                if(i == 0) {
+                    toolTipMessage("Press ENTER to start a new game.", "");
+                } else {
+                    toolTipMessage("Press RIGHT_ARROW or ENTER to open submenu.", "");
+                }
+
             } else {
-                mvwprintw(window, 2 * (i + 1), 5, choices[i].c_str());
+                mvwprintw(window, 2 * (i + 1) + 1, 5, choices[i].c_str());
             }
         }
 
@@ -189,7 +252,7 @@ void gameMenuWindow(WINDOW* window, int highlighted) {
                 if(highlighted > 0) { highlighted--; }
                 break;
             case KEY_DOWN:
-                if(highlighted < 2) { highlighted++; }
+                if(highlighted < 1) { highlighted++; }
                 break;
             case KEY_RIGHT:
                 choice = 10;
@@ -218,10 +281,6 @@ void gameMenuWindow(WINDOW* window, int highlighted) {
         }
         
         if(highlighted == 1) {
-            statsWindow(window);
-        }
-
-        if(highlighted == 2) {
             gameModeWindow(window);
         }
     }
@@ -241,15 +300,25 @@ int main(int argc, char * argv[]) {
     start_ncurses();
 
     WINDOW *start_menu_window = newwin(height, width, start_y, start_x);
+    WINDOW *stats_window = newwin(height, width, start_y, start_x + width + 10);
 
     getTerminalInfo();
     info();
     refresh();
 
     box(start_menu_window, 0, 0);
+    box(stats_window, 0, 0);
 
     wrefresh(start_menu_window);
+    wrefresh(stats_window);
 
+    start_color();
+    // init_pair(0, COLOR_GREEN, COLOR_BLACK);
+    init_pair(1, COLOR_GREEN, COLOR_BLACK);
+    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
+
+    statsWindow(stats_window);
     gameMenuWindow(start_menu_window, 0);
 
     endwin();
