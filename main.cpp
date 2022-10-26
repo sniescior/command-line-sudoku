@@ -59,8 +59,8 @@ void clearScreen(WINDOW *window, int fromX, int toX, int fromY, int toY) {
 /**
  * --------------------------- WINDOWS HELPER FUNCTIONS ---------------------------
 */
-
-void gameMenuWindow(WINDOW* window, int highlighted);
+void gameMenuWindow(WINDOW* window, int highlighted);   // WINDOW_CODE: 0
+void gameModeWindow(WINDOW* window);    // WINDOW_CODE: 1
 
 void statsWindow(WINDOW* window) {
     
@@ -70,7 +70,7 @@ void startGame(WINDOW* window) {
 
 }
 
-void exitPrompt(WINDOW* window) {
+void exitPrompt(WINDOW* window, int highlighted, int returnWindow) {
     keypad(stdscr, true);
     
     int c;
@@ -86,12 +86,17 @@ void exitPrompt(WINDOW* window) {
         return;
     } else {
         // Any other key
-        mvwprintw(stdscr, maxHeight - 2, 18, "Aborting...                           ");
+        mvwprintw(stdscr, maxHeight - 2, 18, "                                      ");
         refresh();
         keypad(stdscr, false);
         curs_set(0);
         noecho();
-        gameMenuWindow(window, 0);
+        if(returnWindow == 0) {
+            gameMenuWindow(window, highlighted);
+        }
+        if(returnWindow == 1) {
+            gameModeWindow(window);
+        }
     }
 }
 
@@ -142,9 +147,18 @@ void gameModeWindow(WINDOW* window) {
             gameMode = highlighted;
             break;
         }
+
+        if(choice == 101 || choice == 69) {
+            // User pressed 'E' or 'e' key
+            break;
+        }
     }
 
-    gameMenuWindow(window, 2);
+    if(choice == 101 || choice == 69) {
+        exitPrompt(window, highlighted, 1);
+    } else {
+        gameMenuWindow(window, 2);
+    }
 
 }
 
@@ -190,14 +204,14 @@ void gameMenuWindow(WINDOW* window, int highlighted) {
             break;
         }
 
-        if(choice == 101) {
-            // User pressed Enter key
+        if(choice == 101 || choice == 69) {
+            // User pressed 'E' or 'e' key
             break;
         }
     }
 
-    if(choice == 101) {
-        exitPrompt(window);
+    if(choice == 101 || choice == 69) {
+        exitPrompt(window, highlighted, 0);
     } else {
         if(highlighted == 0) {
             startGame(window);
