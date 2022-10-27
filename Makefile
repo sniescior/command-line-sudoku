@@ -1,7 +1,9 @@
+SOURCES := $(wildcard sources/*.cpp)
+
 all: sudoku
 
-sudoku: main.cpp
-	g++ -o sudoku main.cpp -lncurses
+sudoku: sources/main.cpp
+	g++ -o sudoku $(SOURCES) -lncurses
 
 clean:
 	rm sudoku
