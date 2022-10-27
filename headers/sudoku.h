@@ -15,6 +15,8 @@ public:
     void printSudoku();
     bool isSafe(int row, int col, int number);
     bool solveSudoku(int row, int col);
+    void generateSudoku(int level);
+    int countBlank();
 };
 
 #endif
