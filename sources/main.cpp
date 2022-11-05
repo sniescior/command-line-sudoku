@@ -2,12 +2,20 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <string>
+#include "../headers/sudoku.h"
 
 using namespace std;
+
+#define GAMES_STARTED = 0;
+#define GAMES_WON = 0;
+#define WIN_RATE = 0;
 
 int gameMode = 0;
 int maxHeight;
 int maxWidth;
+
+Sudoku *sudoku_to_fill;
+Sudoku *sudoku_to_check;
 
 /**
  * --------------------------- INIT NCURSES FUNCTIONS ---------------------------
@@ -113,8 +121,6 @@ void statsWindow(WINDOW* window) {
     wrefresh(window);
 }
 
-void startGame(WINDOW* window) {}
-
 void exitPrompt(WINDOW* window, int highlighted, int returnWindow) {
     keypad(stdscr, true);
     
@@ -141,6 +147,82 @@ void exitPrompt(WINDOW* window, int highlighted, int returnWindow) {
         }
         if(returnWindow == 1) {
             gameModeWindow(window);
+        }
+    }
+}
+
+// Columns
+int coordinatesX[9] = {
+    3, 6, 9,  15, 18, 21,  27, 30, 33
+};
+
+// Lines
+int coordinatesY[9] = {
+    1, 3, 5,  7, 9, 11,  13, 15, 17
+};
+
+void renderSudoku(WINDOW *window, Sudoku *sudoku) {
+    for(int i = 0; i < 9; i++) {
+        for(int j = 0; j < 9; j++) {
+            if(sudoku->getItem(j, i) == 0) {
+                mvwprintw(window, coordinatesY[i], coordinatesX[j], "_");
+                wrefresh(window);
+            } else {
+                mvwprintw(window, coordinatesY[i], coordinatesX[j], "%d", sudoku->getItem(j, i));
+                wrefresh(window);
+            }
+            usleep(10000);
+        }
+    }
+
+    mvwhline(window, 6, 1, ACS_HLINE, 35);
+    mvwhline(window, 12, 1, ACS_HLINE, 35);
+    mvwvline(window, 1, 12, ACS_VLINE, 17);
+    mvwvline(window, 1, 24, ACS_VLINE, 17);
+}
+
+void startGame() {
+
+    int height, width, start_y, start_x;
+    height = 19;
+    width = 37;
+    start_y = 5;
+    start_x = 10;
+
+    int choice = 0;
+
+    for(int i = 0; i < maxWidth; i++) {
+        for(int j = 0; j < maxHeight; j++) {
+            move(j, i);
+            printw(" ");
+            refresh();
+        }
+    }
+
+    printGameMode();
+    getTerminalInfo();
+    refresh();
+
+    WINDOW *sudoku_window = newwin(height, width, start_y, start_x);
+    box(sudoku_window, 0, 0);
+    wrefresh(sudoku_window);
+
+    sudoku_to_check = new Sudoku();
+    sudoku_to_check->solveSudoku(0, 0);
+
+    sudoku_to_fill = sudoku_to_check->copySudoku();
+    sudoku_to_fill->generateSudoku(gameMode);
+
+    info();
+
+    refresh();
+
+    while(1) {
+        renderSudoku(sudoku_window, sudoku_to_fill);
+        choice = wgetch(sudoku_window);
+        if(choice == 101 || choice == 69) {
+            // User pressed 'E' or 'e' key
+            return;
         }
     }
 }
@@ -277,7 +359,7 @@ void gameMenuWindow(WINDOW* window, int highlighted) {
         exitPrompt(window, highlighted, 0);
     } else {
         if(highlighted == 0) {
-            startGame(window);
+            startGame();
         }
         
         if(highlighted == 1) {

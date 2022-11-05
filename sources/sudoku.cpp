@@ -25,6 +25,10 @@ void Sudoku::printSudoku() {
     }
 }
 
+int Sudoku::getItem(int x, int y) {
+    return this->sudokuArr[x][y];
+}
+
 /**
  * 
  * --------------------- SUDOKU SOLVING FUNCTIONS ---------------------
@@ -56,7 +60,6 @@ bool Sudoku::isSafe(int row, int col, int number) {
 }
 
 bool Sudoku::solveSudoku(int row, int col) {
-    // std::cout << "Solving " << row << " " << col << "\n";
     if(row == 8 && col == 9) return true;
 
     if(col == 9) {
@@ -102,8 +105,6 @@ void Sudoku::createSeed() {
         // srand((unsigned int) time (NULL));
         int randomNumber = rand()%9 + 1;
         this->sudokuArr[randomRow][randomCol] = randomNumber;
-
-        std::cout << "Filling random field" << randomRow << " " << randomCol << "\n";
     }
 }
 
@@ -155,3 +156,9 @@ void Sudoku::generateSudoku(int level) {
         }
     }
 }
+
+Sudoku* Sudoku::copySudoku() {
+    return new Sudoku(this->sudokuArr);
+}
+
+

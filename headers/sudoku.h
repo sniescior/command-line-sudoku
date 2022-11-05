@@ -8,9 +8,11 @@ private:
     int sudokuArr[9][9];
     std::vector <int> numbers;
 public:
+    int getItem(int x, int y);
     Sudoku();
     ~Sudoku();
     Sudoku(int grid[9][9]);
+    Sudoku* copySudoku();
     void createSeed();
     void printSudoku();
     bool isSafe(int row, int col, int number);
