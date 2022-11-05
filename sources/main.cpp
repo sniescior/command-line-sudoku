@@ -14,8 +14,9 @@ int gameMode = 0;
 int maxHeight;
 int maxWidth;
 
-Sudoku *sudoku_to_fill;
-Sudoku *sudoku_to_check;
+Sudoku *sudoku_to_check;    // Sudoku array that is correctly and fully filled with numbers
+Sudoku *sudoku_to_fill;     // Sudoku that stores empty fields
+Sudoku *sudoku_to_play;     // Sudoku that the player can modify
 
 /**
  * --------------------------- INIT NCURSES FUNCTIONS ---------------------------
@@ -162,12 +163,18 @@ int coordinatesY[9] = {
 };
 
 void renderSudoku(WINDOW *window, Sudoku *sudoku, int selectedX, int selectedY) {
+
+    mvwhline(window, 6, 1, ACS_HLINE, 35);
+    mvwhline(window, 12, 1, ACS_HLINE, 35);
+    mvwvline(window, 1, 12, ACS_VLINE, 17);
+    mvwvline(window, 1, 24, ACS_VLINE, 17);
+
     for(int i = 0; i < 9; i++) {
         for(int j = 0; j < 9; j++) {
             if(sudoku->getItem(j, i) == 0) {
                 if(selectedX == i && selectedY == j) {
                     wattron(window, A_UNDERLINE);
-                    mvwprintw(window, coordinatesY[i], coordinatesX[j], "^");
+                    mvwprintw(window, coordinatesY[i], coordinatesX[j], "*");
                     wattroff(window, A_UNDERLINE);
                 } else {
                     wattron(window, A_UNDERLINE);
@@ -182,11 +189,13 @@ void renderSudoku(WINDOW *window, Sudoku *sudoku, int selectedX, int selectedY) 
             usleep(10000);
         }
     }
+}
 
-    mvwhline(window, 6, 1, ACS_HLINE, 35);
-    mvwhline(window, 12, 1, ACS_HLINE, 35);
-    mvwvline(window, 1, 12, ACS_VLINE, 17);
-    mvwvline(window, 1, 24, ACS_VLINE, 17);
+void setNumber(WINDOW *window, int selectedX, int selectedY, char number) {
+    if(sudoku_to_fill->getItem(selectedX, selectedY) == 0) {
+        sudoku_to_play->setItem(selectedX, selectedY, number - '0');
+        mvwprintw(window, coordinatesY[selectedY], coordinatesX[selectedX], "%d", sudoku_to_play->getItem(selectedX, selectedY));
+    }
 }
 
 void startGame() {
@@ -201,7 +210,7 @@ void startGame() {
     selectedX = 0;
     selectedY = 0;
 
-    char choice = 0;
+    char choice = '0';
 
     for(int i = 0; i < maxWidth; i++) {
         for(int j = 0; j < maxHeight; j++) {
@@ -225,22 +234,32 @@ void startGame() {
     sudoku_to_fill = sudoku_to_check->copySudoku();
     sudoku_to_fill->generateSudoku(gameMode);
 
+    sudoku_to_play = sudoku_to_fill->copySudoku();
+
     info();
 
     refresh();
 
-    renderSudoku(sudoku_window, sudoku_to_fill, selectedX, selectedY);
+    renderSudoku(sudoku_window, sudoku_to_play, selectedX, selectedY);
 
     while(1) {
-        if(sudoku_to_fill->getItem(selectedX, selectedY) == 0) {
+        if(sudoku_to_play->getItem(selectedX, selectedY) == 0) {
             wattron(sudoku_window, A_UNDERLINE);
-            mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "^");
+            mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "*");
             wattroff(sudoku_window, A_UNDERLINE);
             wrefresh(sudoku_window);
         } else {
-            wattron(sudoku_window, A_BOLD);
-            mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "%d", sudoku_to_fill->getItem(selectedX, selectedY));
-            wattroff(sudoku_window, A_BOLD);
+            if(sudoku_to_play->getItem(selectedX, selectedY) != 0 && sudoku_to_play->getItem(selectedX, selectedY) == sudoku_to_check->getItem(selectedX, selectedY)) {
+                wattron(sudoku_window, A_BOLD);
+                mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "%d", sudoku_to_play->getItem(selectedX, selectedY));
+                wattroff(sudoku_window, A_BOLD);
+            } else {
+                wattron(sudoku_window, COLOR_PAIR(4));
+                wattron(sudoku_window, A_BOLD);
+                mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "%d", sudoku_to_play->getItem(selectedX, selectedY));
+                wattroff(sudoku_window, COLOR_PAIR(4));
+                wattroff(sudoku_window, A_BOLD);
+            }
             wrefresh(sudoku_window);
         }
 
@@ -249,9 +268,11 @@ void startGame() {
         if(choice == 'w') {
             if(selectedY > 0) {
                 selectedY--;
-                if(sudoku_to_fill->getItem(selectedX, selectedY + 1) != 0) {
-                    mvwprintw(sudoku_window, coordinatesY[selectedY + 1], coordinatesX[selectedX], "%d", sudoku_to_fill->getItem(selectedX, selectedY + 1));
-                    wrefresh(sudoku_window);
+                if(sudoku_to_play->getItem(selectedX, selectedY + 1) != 0) {
+                    if(sudoku_to_play->getItem(selectedX, selectedY + 1) == sudoku_to_check->getItem(selectedX, selectedY + 1)) {
+                        mvwprintw(sudoku_window, coordinatesY[selectedY + 1], coordinatesX[selectedX], "%d", sudoku_to_play->getItem(selectedX, selectedY + 1));
+                        wrefresh(sudoku_window);
+                    }
                 } else {
                     wattron(sudoku_window, A_UNDERLINE);
                     mvwprintw(sudoku_window, coordinatesY[selectedY + 1], coordinatesX[selectedX], " ");
@@ -264,9 +285,11 @@ void startGame() {
         if(choice == 's') {
             if(selectedY < 8) {
                 selectedY++;
-                if(sudoku_to_fill->getItem(selectedX, selectedY - 1) != 0) {
-                    mvwprintw(sudoku_window, coordinatesY[selectedY - 1], coordinatesX[selectedX], "%d", sudoku_to_fill->getItem(selectedX, selectedY - 1));
-                    wrefresh(sudoku_window);
+                if(sudoku_to_play->getItem(selectedX, selectedY - 1) != 0) {
+                    if(sudoku_to_play->getItem(selectedX, selectedY - 1) == sudoku_to_check->getItem(selectedX, selectedY - 1)) {
+                        mvwprintw(sudoku_window, coordinatesY[selectedY - 1], coordinatesX[selectedX], "%d", sudoku_to_play->getItem(selectedX, selectedY - 1));
+                        wrefresh(sudoku_window);
+                    }
                 } else {
                     wattron(sudoku_window, A_UNDERLINE);
                     mvwprintw(sudoku_window, coordinatesY[selectedY - 1], coordinatesX[selectedX], " ");
@@ -279,9 +302,11 @@ void startGame() {
         if(choice == 'a') {
             if(selectedX > 0) {
                 selectedX--;
-                if(sudoku_to_fill->getItem(selectedX + 1, selectedY) != 0) {
-                    mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX + 1], "%d", sudoku_to_fill->getItem(selectedX + 1, selectedY));
-                    wrefresh(sudoku_window);
+                if(sudoku_to_play->getItem(selectedX + 1, selectedY) != 0) {
+                    if(sudoku_to_play->getItem(selectedX + 1, selectedY) == sudoku_to_check->getItem(selectedX + 1, selectedY)) {
+                        mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX + 1], "%d", sudoku_to_play->getItem(selectedX + 1, selectedY));
+                        wrefresh(sudoku_window);
+                    }
                 } else {
                     wattron(sudoku_window, A_UNDERLINE);
                     mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX + 1], " ");
@@ -294,9 +319,11 @@ void startGame() {
         if(choice == 'd') {
             if(selectedX < 8) {
                 selectedX++;
-                if(sudoku_to_fill->getItem(selectedX - 1, selectedY) != 0) {
-                    mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX - 1], "%d", sudoku_to_fill->getItem(selectedX - 1, selectedY));
-                    wrefresh(sudoku_window);
+                if(sudoku_to_play->getItem(selectedX - 1, selectedY) != 0) {
+                    if(sudoku_to_play->getItem(selectedX - 1, selectedY) == sudoku_to_check->getItem(selectedX - 1, selectedY)) {
+                        mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX - 1], "%d", sudoku_to_play->getItem(selectedX - 1, selectedY));
+                        wrefresh(sudoku_window);
+                    }
                 } else {
                     wattron(sudoku_window, A_UNDERLINE);
                     mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX - 1], " ");
@@ -309,6 +336,10 @@ void startGame() {
         if(choice == 'e' || choice == 'E') {
             // User pressed 'E' or 'e' key
             return;
+        }
+
+        if(choice > '1' && choice <= '9') {
+            setNumber(sudoku_window, selectedX, selectedY, choice);
         }
     }
 }
@@ -485,12 +516,13 @@ int main(int argc, char * argv[]) {
     init_pair(1, COLOR_GREEN, COLOR_BLACK);
     init_pair(2, COLOR_YELLOW, COLOR_BLACK);
     init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
+    init_pair(4, COLOR_RED, COLOR_BLACK);
 
     statsWindow(stats_window);
     gameMenuWindow(start_menu_window, 0);
 
     endwin();
-    cout << "\n";
-    cout << "Program ended.\n";
+    std::cout << "\n";
+    std::cout << "Program ended.\n";
     return 0;
 }

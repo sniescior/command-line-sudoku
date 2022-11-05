@@ -84,6 +84,10 @@ bool Sudoku::solveSudoku(int row, int col) {
     return false;
 }
 
+void Sudoku::setItem(int x, int y, int number) {
+    this->sudokuArr[x][y] = number;
+}
+
 /**
  * 
  * --------------------- SUDOKU GENERATOR FUNCTIONS ---------------------

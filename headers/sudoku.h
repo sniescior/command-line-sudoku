@@ -19,6 +19,7 @@ public:
     bool solveSudoku(int row, int col);
     void generateSudoku(int level);
     int countBlank();
+    void setItem(int x, int y, int number);
 };
 
 #endif
