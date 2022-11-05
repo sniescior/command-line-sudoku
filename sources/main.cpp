@@ -161,12 +161,20 @@ int coordinatesY[9] = {
     1, 3, 5,  7, 9, 11,  13, 15, 17
 };
 
-void renderSudoku(WINDOW *window, Sudoku *sudoku) {
+void renderSudoku(WINDOW *window, Sudoku *sudoku, int selectedX, int selectedY) {
     for(int i = 0; i < 9; i++) {
         for(int j = 0; j < 9; j++) {
             if(sudoku->getItem(j, i) == 0) {
-                mvwprintw(window, coordinatesY[i], coordinatesX[j], "_");
-                wrefresh(window);
+                if(selectedX == i && selectedY == j) {
+                    wattron(window, A_UNDERLINE);
+                    mvwprintw(window, coordinatesY[i], coordinatesX[j], "^");
+                    wattroff(window, A_UNDERLINE);
+                } else {
+                    wattron(window, A_UNDERLINE);
+                    mvwprintw(window, coordinatesY[i], coordinatesX[j], " ");
+                    wattroff(window, A_UNDERLINE);
+                    wrefresh(window);
+                }
             } else {
                 mvwprintw(window, coordinatesY[i], coordinatesX[j], "%d", sudoku->getItem(j, i));
                 wrefresh(window);
@@ -189,7 +197,11 @@ void startGame() {
     start_y = 5;
     start_x = 10;
 
-    int choice = 0;
+    int selectedX, selectedY;
+    selectedX = 0;
+    selectedY = 0;
+
+    char choice = 0;
 
     for(int i = 0; i < maxWidth; i++) {
         for(int j = 0; j < maxHeight; j++) {
@@ -217,10 +229,84 @@ void startGame() {
 
     refresh();
 
+    renderSudoku(sudoku_window, sudoku_to_fill, selectedX, selectedY);
+
     while(1) {
-        renderSudoku(sudoku_window, sudoku_to_fill);
+        if(sudoku_to_fill->getItem(selectedX, selectedY) == 0) {
+            wattron(sudoku_window, A_UNDERLINE);
+            mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "^");
+            wattroff(sudoku_window, A_UNDERLINE);
+            wrefresh(sudoku_window);
+        } else {
+            wattron(sudoku_window, A_BOLD);
+            mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "%d", sudoku_to_fill->getItem(selectedX, selectedY));
+            wattroff(sudoku_window, A_BOLD);
+            wrefresh(sudoku_window);
+        }
+
         choice = wgetch(sudoku_window);
-        if(choice == 101 || choice == 69) {
+
+        if(choice == 'w') {
+            if(selectedY > 0) {
+                selectedY--;
+                if(sudoku_to_fill->getItem(selectedX, selectedY + 1) != 0) {
+                    mvwprintw(sudoku_window, coordinatesY[selectedY + 1], coordinatesX[selectedX], "%d", sudoku_to_fill->getItem(selectedX, selectedY + 1));
+                    wrefresh(sudoku_window);
+                } else {
+                    wattron(sudoku_window, A_UNDERLINE);
+                    mvwprintw(sudoku_window, coordinatesY[selectedY + 1], coordinatesX[selectedX], " ");
+                    wattroff(sudoku_window, A_UNDERLINE);
+                    wrefresh(sudoku_window);
+                }
+            }
+        }
+
+        if(choice == 's') {
+            if(selectedY < 8) {
+                selectedY++;
+                if(sudoku_to_fill->getItem(selectedX, selectedY - 1) != 0) {
+                    mvwprintw(sudoku_window, coordinatesY[selectedY - 1], coordinatesX[selectedX], "%d", sudoku_to_fill->getItem(selectedX, selectedY - 1));
+                    wrefresh(sudoku_window);
+                } else {
+                    wattron(sudoku_window, A_UNDERLINE);
+                    mvwprintw(sudoku_window, coordinatesY[selectedY - 1], coordinatesX[selectedX], " ");
+                    wattroff(sudoku_window, A_UNDERLINE);
+                    wrefresh(sudoku_window);
+                }
+            }
+        }
+
+        if(choice == 'a') {
+            if(selectedX > 0) {
+                selectedX--;
+                if(sudoku_to_fill->getItem(selectedX + 1, selectedY) != 0) {
+                    mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX + 1], "%d", sudoku_to_fill->getItem(selectedX + 1, selectedY));
+                    wrefresh(sudoku_window);
+                } else {
+                    wattron(sudoku_window, A_UNDERLINE);
+                    mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX + 1], " ");
+                    wattroff(sudoku_window, A_UNDERLINE);
+                    wrefresh(sudoku_window);
+                }
+            }
+        }
+
+        if(choice == 'd') {
+            if(selectedX < 8) {
+                selectedX++;
+                if(sudoku_to_fill->getItem(selectedX - 1, selectedY) != 0) {
+                    mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX - 1], "%d", sudoku_to_fill->getItem(selectedX - 1, selectedY));
+                    wrefresh(sudoku_window);
+                } else {
+                    wattron(sudoku_window, A_UNDERLINE);
+                    mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX - 1], " ");
+                    wattroff(sudoku_window, A_UNDERLINE);
+                    wrefresh(sudoku_window);
+                }
+            }
+        }
+
+        if(choice == 'e' || choice == 'E') {
             // User pressed 'E' or 'e' key
             return;
         }
