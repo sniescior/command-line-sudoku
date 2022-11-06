@@ -13,6 +13,7 @@ using namespace std;
 int gameMode = 0;
 int maxHeight;
 int maxWidth;
+int mistakes = -1;
 
 Sudoku *sudoku_to_check;    // Sudoku array that is correctly and fully filled with numbers
 Sudoku *sudoku_to_fill;     // Sudoku that stores empty fields
@@ -162,6 +163,21 @@ int coordinatesY[9] = {
     1, 3, 5,  7, 9, 11,  13, 15, 17
 };
 
+void controlsInfo() {
+    move(maxHeight - 2, maxWidth - 40);
+    printw("Use ");
+    attron(A_UNDERLINE);
+    printw("WASD");
+    attroff(A_UNDERLINE);
+    printw(" buttons to navigate the board.");
+}
+
+void addMistake() {
+    move(3, 1);
+    printw("Mistakes: %d", mistakes);
+    refresh();
+}
+
 void renderSudoku(WINDOW *window, Sudoku *sudoku, int selectedX, int selectedY) {
 
     mvwhline(window, 6, 1, ACS_HLINE, 35);
@@ -199,7 +215,6 @@ void setNumber(WINDOW *window, int selectedX, int selectedY, char number) {
 }
 
 void startGame() {
-
     int height, width, start_y, start_x;
     height = 19;
     width = 37;
@@ -223,6 +238,10 @@ void startGame() {
     printGameMode();
     getTerminalInfo();
     refresh();
+
+    controlsInfo();
+    mistakes += 1;
+    addMistake();
 
     WINDOW *sudoku_window = newwin(height, width, start_y, start_x);
     box(sudoku_window, 0, 0);
@@ -254,6 +273,11 @@ void startGame() {
                 mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "%d", sudoku_to_play->getItem(selectedX, selectedY));
                 wattroff(sudoku_window, A_BOLD);
             } else {
+                mistakes += 1;
+                addMistake();
+                if(mistakes == 3) {
+                    break;
+                }
                 wattron(sudoku_window, COLOR_PAIR(4));
                 wattron(sudoku_window, A_BOLD);
                 mvwprintw(sudoku_window, coordinatesY[selectedY], coordinatesX[selectedX], "%d", sudoku_to_play->getItem(selectedX, selectedY));
@@ -338,7 +362,7 @@ void startGame() {
             return;
         }
 
-        if(choice > '1' && choice <= '9') {
+        if(choice >= '1' && choice <= '9') {
             setNumber(sudoku_window, selectedX, selectedY, choice);
         }
     }
@@ -488,6 +512,7 @@ void gameMenuWindow(WINDOW* window, int highlighted) {
 /**
  * --------------------------- START PROGRAM ---------------------------
 */
+
 int main(int argc, char * argv[]) {
 
     int height, width, start_y, start_x;
