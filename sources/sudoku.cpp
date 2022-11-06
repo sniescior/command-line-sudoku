@@ -136,7 +136,7 @@ void Sudoku::generateSudoku(int level) {
     int blankFieldsCount = 0;
     switch (level) {
         case 0:
-            blankFieldsCount = 43;
+            blankFieldsCount = 40;
             break;
         case 1:
             blankFieldsCount = 53;

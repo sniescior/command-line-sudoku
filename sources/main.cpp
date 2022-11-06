@@ -20,6 +20,25 @@ Sudoku *sudoku_to_fill;     // Sudoku that stores empty fields
 Sudoku *sudoku_to_play;     // Sudoku that the player can modify
 
 /**
+ * --------------------------- SUDOKU CHECK ---------------------------
+*/
+
+bool sudokuCheck() {
+    for(int i = 0; i < 9; i++) {
+        for(int j = 0; j < 9; j++) {
+            if(sudoku_to_play->getItem(i, j) != sudoku_to_check->getItem(i, j)) {
+                move(0,0);
+                printw("Not yet filled up");
+                refresh();
+                return false;   // Keep playing
+            }
+        }
+    }
+
+    return true;    // Sudoku filled up correctly
+}
+
+/**
  * --------------------------- INIT NCURSES FUNCTIONS ---------------------------
 */
 void start_ncurses() {
@@ -154,7 +173,7 @@ void statsWindow(WINDOW* window) {
         mvwprintw(window, 5, 4, "-----------------------------------------");
         mvwprintw(window, 6, 5, "Win rate:");
         if(GAMES_STARTED > 0) {
-            WIN_RATE = (float)GAMES_WON / (float)GAMES_STARTED;
+            WIN_RATE = (float)GAMES_WON / (float)GAMES_STARTED * 100;
             mvwprintw(window, 6, 40, "%.0f %%", WIN_RATE);
         } else {
             mvwprintw(window, 6, 40, "0.0 %%");
@@ -403,6 +422,11 @@ void startGame() {
 
         if(choice >= '1' && choice <= '9') {
             setNumber(sudoku_window, selectedX, selectedY, choice);
+            if(sudokuCheck()) {
+                GAMES_WON += 1;
+                alertScreen("Congratulations, you won! ");
+                break;
+            }
         }
     }
 }
