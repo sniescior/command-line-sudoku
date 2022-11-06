@@ -6,9 +6,9 @@
 
 using namespace std;
 
-#define GAMES_STARTED = 0;
-#define GAMES_WON = 0;
-#define WIN_RATE = 0;
+int GAMES_STARTED = 0;
+int GAMES_WON = 0;
+float WIN_RATE = 0;
 
 int gameMode = 0;
 int maxHeight;
@@ -82,8 +82,44 @@ void toolTipMessage(string message, string message1) {
 /**
  * --------------------------- WINDOWS HELPER FUNCTIONS ---------------------------
 */
+
+void alertScreen();
+void mainScreen(int height, int width, int start_y, int start_x);
 void gameMenuWindow(WINDOW* window, int highlighted);   // WINDOW_CODE: 0
 void gameModeWindow(WINDOW* window);    // WINDOW_CODE: 1
+
+void clearView() {
+    for(int i = 0; i < maxWidth; i++) {
+        for(int j = 0; j < maxHeight; j++) {
+            move(j, i);
+            printw(" ");
+            refresh();
+        }
+    }
+}
+
+void alertScreen(const char* message) {
+    clearView();
+    move(maxHeight / 2, 10);
+    printw(message);
+    move((maxHeight / 2) + 1, 10);
+    printw("Press any key to go back to main menu");
+
+    int height, width, start_y, start_x;
+    height = 9;
+    width = 50;
+    start_y = 5;
+    start_x = 10;
+
+    while(1) {
+        char c = getch();
+        if(c) {
+            clearView();
+            mainScreen(height, width, start_y, start_x);
+            break;
+        }
+    }
+}
 
 void printGameMode() {
     move(2, 1);
@@ -111,13 +147,18 @@ void statsWindow(WINDOW* window) {
     
     if(gameMode == 0) {
         mvwprintw(window, 2, 5, "Games started: ");
-        mvwprintw(window, 2, 42, "18");
+        mvwprintw(window, 2, 42, "%d", GAMES_STARTED);
         mvwprintw(window, 3, 4, "-----------------------------------------");
         mvwprintw(window, 4, 5, "Games won: ");
-        mvwprintw(window, 4, 42, "09");
+        mvwprintw(window, 4, 42, "%d", GAMES_WON);
         mvwprintw(window, 5, 4, "-----------------------------------------");
         mvwprintw(window, 6, 5, "Win rate:");
-        mvwprintw(window, 6, 40, "50 %%");
+        if(GAMES_STARTED > 0) {
+            WIN_RATE = (float)GAMES_WON / (float)GAMES_STARTED;
+            mvwprintw(window, 6, 40, "%.0f %%", WIN_RATE);
+        } else {
+            mvwprintw(window, 6, 40, "0.0 %%");
+        }
     }
 
     wrefresh(window);
@@ -215,6 +256,9 @@ void setNumber(WINDOW *window, int selectedX, int selectedY, char number) {
 }
 
 void startGame() {
+    GAMES_STARTED += 1;
+    mistakes = -1;
+
     int height, width, start_y, start_x;
     height = 19;
     width = 37;
@@ -227,13 +271,7 @@ void startGame() {
 
     char choice = '0';
 
-    for(int i = 0; i < maxWidth; i++) {
-        for(int j = 0; j < maxHeight; j++) {
-            move(j, i);
-            printw(" ");
-            refresh();
-        }
-    }
+    clearView();
 
     printGameMode();
     getTerminalInfo();
@@ -275,7 +313,8 @@ void startGame() {
             } else {
                 mistakes += 1;
                 addMistake();
-                if(mistakes == 3) {
+                if(mistakes >= 3) {
+                    alertScreen("Game over...");
                     break;
                 }
                 wattron(sudoku_window, COLOR_PAIR(4));
@@ -513,16 +552,7 @@ void gameMenuWindow(WINDOW* window, int highlighted) {
  * --------------------------- START PROGRAM ---------------------------
 */
 
-int main(int argc, char * argv[]) {
-
-    int height, width, start_y, start_x;
-    height = 9;
-    width = 50;
-    start_y = 5;
-    start_x = 10;
-    
-    start_ncurses();
-
+void mainScreen(int height, int width, int start_y, int start_x) {
     WINDOW *start_menu_window = newwin(height, width, start_y, start_x);
     WINDOW *stats_window = newwin(height, width, start_y, start_x + width + 10);
 
@@ -533,8 +563,19 @@ int main(int argc, char * argv[]) {
     box(start_menu_window, 0, 0);
     box(stats_window, 0, 0);
 
-    wrefresh(start_menu_window);
-    wrefresh(stats_window);
+    statsWindow(stats_window);
+    gameMenuWindow(start_menu_window, 0);
+}
+
+int main(int argc, char * argv[]) {
+
+    int height, width, start_y, start_x;
+    height = 9;
+    width = 50;
+    start_y = 5;
+    start_x = 10;
+    
+    start_ncurses();
 
     start_color();
     // init_pair(0, COLOR_GREEN, COLOR_BLACK);
@@ -543,8 +584,7 @@ int main(int argc, char * argv[]) {
     init_pair(3, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(4, COLOR_RED, COLOR_BLACK);
 
-    statsWindow(stats_window);
-    gameMenuWindow(start_menu_window, 0);
+    mainScreen(height, width, start_y, start_x);
 
     endwin();
     std::cout << "\n";
